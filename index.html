@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streak Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+        }
+
+        .day-input-view {
+            text-align: center;
+        }
+
+        .current-date {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 30px;
+        }
+
+        .choice-container {
+            margin: 40px 0;
+        }
+
+        .choice-option {
+            display: block;
+            width: 100%;
+            margin: 15px 0;
+            padding: 20px;
+            border: 3px solid #e2e8f0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .choice-option input[type="radio"] {
+            margin-right: 15px;
+            transform: scale(1.5);
+        }
+
+        .choice-option.success {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        .choice-option.success:hover {
+            background: #c6f6d5;
+        }
+
+        .choice-option.failure {
+            border-color: #e53e3e;
+            background: #fffaf0;
+        }
+
+        .choice-option.failure:hover {
+            background: #fed7d7;
+        }
+
+        .submit-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            background: #5a67d8;
+        }
+
+        .submit-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+
+        .storage-info {
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f7fafc;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .storage-info.working {
+            background: #f0fff4;
+            border: 2px solid #48bb78;
+        }
+
+        .storage-info.error {
+            background: #fed7d7;
+            border: 2px solid #e53e3e;
+        }
+
+        /* Monatsübersicht */
+        .month-view {
+            text-align: center;
+        }
+
+        .streak-display {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .streak-number {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .month-header {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #4a5568;
+            margin-bottom: 20px;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 30px;
+        }
+
+        .weekday-header {
+            text-align: center;
+            font-weight: bold;
+            padding: 8px;
+            background: #f7fafc;
+            color: #4a5568;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .day-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+
+        .day-cell:hover {
+            transform: scale(1.1);
+        }
+
+        .day-cell.empty {
+            visibility: hidden;
+        }
+
+        .day-cell.success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .day-cell.failure {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .day-cell.neutral {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+        }
+
+        .day-cell.today {
+            border: 3px solid #667eea;
+            font-weight: bold;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .nav-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .nav-btn:hover {
+            background: #5a67d8;
+        }
+
+        .nav-btn.back {
+            background: #718096;
+        }
+
+        .nav-btn.back:hover {
+            background: #4a5568;
+        }
+
+        .edit-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            text-align: center;
+            display: none;
+        }
+
+        .edit-popup.active {
+            display: block;
+        }
+
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+
+        .popup-overlay.active {
+            display: block;
+        }
+
+        .edit-date {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #4a5568;
+            margin-bottom: 20px;
+        }
+
+        .edit-option {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .edit-option.success {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        .edit-option.failure {
+            border-color: #e53e3e;
+            background: #fffaf0;
+        }
+
+        .edit-option.delete {
+            border-color: #718096;
+            background: #f7fafc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Tag-Eingabe Ansicht -->
+        <div id="dayInputView" class="view active">
+            <h1>🔥 Streak Tracker</h1>
+            
+            <div class="current-date" id="currentDateDisplay"></div>
+            
+            <div class="choice-container">
+                <label class="choice-option success">
+                    <input type="radio" name="dayChoice" value="success">
+                    <span>✅ Erfolgreich - Ziel erreicht</span>
+                </label>
+                
+                <label class="choice-option failure">
+                    <input type="radio" name="dayChoice" value="failure">
+                    <span>❌ Nicht erfolgreich - Ziel verfehlt</span>
+                </label>
+            </div>
+            
+            <button class="submit-btn" id="submitDay" disabled>Tag speichern</button>
+            
+            <div class="storage-info" id="storageInfo">
+                💾 Gespeicherte Tage: <span id="savedDaysCount">0</span><br>
+                <small id="storageStatus">Lade...</small>
+            </div>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="showMonthView()">📅 Monatsübersicht</button>
+            </div>
+        </div>
+
+        <!-- Monats-Übersicht -->
+        <div id="monthView" class="view">
+            <h1>📊 Monatsübersicht</h1>
+            
+            <div class="streak-display">
+                <div>Aktueller Streak</div>
+                <div class="streak-number" id="streakNumber">0</div>
+                <div>Tage in Folge</div>
+            </div>
+            
+            <div class="month-header" id="monthHeader"></div>
+            
+            <div class="days-grid" id="monthGrid"></div>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn back" onclick="showDayInput()">← Zurück zur Eingabe</button>
+                <button class="nav-btn" onclick="previousMonth()">← Vorheriger Monat</button>
+                <button class="nav-btn" onclick="nextMonth()">Nächster Monat →</button>
+            </div>
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="nav-btn" onclick="clearAllData()" style="background: #e53e3e;">🗑️ Alle Daten löschen</button>
+            </div>
+        </div>
+
+        <!-- Edit Popup -->
+        <div class="popup-overlay" id="popupOverlay" onclick="closeEditPopup()"></div>
+        <div class="edit-popup" id="editPopup">
+            <div class="edit-date" id="editDate"></div>
+            <button class="edit-option success" onclick="updateDay('success')">✅ Erfolgreich</button>
+            <button class="edit-option failure" onclick="updateDay('failure')">❌ Nicht erfolgreich</button>
+            <button class="edit-option delete" onclick="updateDay('delete')">🗑️ Tag löschen</button>
+            <button class="nav-btn" onclick="closeEditPopup()" style="margin-top: 15px;">Abbrechen</button>
+        </div>
+    </div>
+
+    <script>
+        console.log('🔥 NEW VERSION - Streak Tracker with localStorage');
+        
+        let currentInputDate = new Date();
+        let currentViewDate = new Date();
+        let dayData = {};
+        let editingDate = null;
+        let storageWorking = false;
+
+        const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+            'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+        const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+        function formatDateKey(date) {
+            return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+        }
+
+        function formatDisplayDate(date) {
+            const day = date.getDate();
+            const month = monthNames[date.getMonth()];
+            const year = date.getFullYear();
+            return `${day}. ${month} ${year}`;
+        }
+
+        // STORAGE FUNKTIONEN
+        function testStorage() {
+            console.log('🧪 Testing storage capabilities...');
+            try {
+                localStorage.setItem('__test__', 'test');
+                const test = localStorage.getItem('__test__');
+                localStorage.removeItem('__test__');
+                storageWorking = test === 'test';
+                console.log('📊 localStorage working:', storageWorking);
+                return storageWorking;
+            } catch (e) {
+                console.error('❌ localStorage failed:', e);
+                storageWorking = false;
+                return false;
+            }
+        }
+
+        function saveData() {
+            console.log('💾 === SAVING DATA ===');
+            console.log('📝 Data to save:', JSON.stringify(dayData));
+            console.log('📅 Current date:', currentInputDate.toISOString());
+            
+            if (!storageWorking) {
+                console.log('❌ Storage not working, cannot save');
+                updateStorageStatus('❌ Speichern nicht möglich', 'error');
+                return false;
+            }
+
+            try {
+                localStorage.setItem('streakTrackerData', JSON.stringify(dayData));
+                localStorage.setItem('streakTrackerCurrentDate', currentInputDate.toISOString());
+                
+                // Sofort testen
+                const testData = localStorage.getItem('streakTrackerData');
+                const testDate = localStorage.getItem('streakTrackerCurrentDate');
+                
+                console.log('✅ Verification - saved data:', testData);
+                console.log('✅ Verification - saved date:', testDate);
+                
+                if (testData && testDate) {
+                    console.log('✅ STORAGE SUCCESS');
+                    updateStorageStatus('✅ Daten gespeichert', 'working');
+                    return true;
+                } else {
+                    console.error('❌ STORAGE VERIFICATION FAILED');
+                    updateStorageStatus('❌ Speichern fehlgeschlagen', 'error');
+                    return false;
+                }
+            } catch (e) {
+                console.error('❌ Storage error:', e);
+                updateStorageStatus('❌ Speicher-Fehler', 'error');
+                return false;
+            }
+        }
+
+        function loadData() {
+            console.log('📂 === LOADING DATA ===');
+            
+            if (!storageWorking) {
+                console.log('❌ Storage not working, starting fresh');
+                updateStorageStatus('⚠️ Kein persistenter Speicher', 'error');
+                return;
+            }
+
+            try {
+                const savedData = localStorage.getItem('streakTrackerData');
+                const savedDate = localStorage.getItem('streakTrackerCurrentDate');
+                
+                console.log('📦 Raw saved data:', savedData);
+                console.log('📦 Raw saved date:', savedDate);
+                
+                if (savedData && savedData !== 'null') {
+                    dayData = JSON.parse(savedData);
+                    console.log('✅ Loaded dayData:', dayData);
+                    console.log('📊 Number of days loaded:', Object.keys(dayData).length);
+                } else {
+                    console.log('⚪ No saved data found');
+                    dayData = {};
+                }
+                
+                if (savedDate && savedDate !== 'null') {
+                    currentInputDate = new Date(savedDate);
+                    console.log('✅ Loaded current date:', currentInputDate);
+                } else {
+                    console.log('⚪ No saved date, using today');
+                    currentInputDate = new Date();
+                }
+                
+                updateStorageStatus(`✅ ${Object.keys(dayData).length} Tage geladen`, 'working');
+                console.log('✅ LOADING COMPLETE');
+                
+            } catch (e) {
+                console.error('❌ Loading error:', e);
+                dayData = {};
+                currentInputDate = new Date();
+                updateStorageStatus('❌ Laden fehlgeschlagen', 'error');
+            }
+        }
+
+        function updateStorageStatus(message, type) {
+            const statusElement = document.getElementById('storageStatus');
+            const infoElement = document.getElementById('storageInfo');
+            const countElement = document.getElementById('savedDaysCount');
+            
+            if (statusElement) {
+                statusElement.textContent = message;
+            }
+            
+            if (countElement) {
+                countElement.textContent = Object.keys(dayData).length;
+            }
+            
+            if (infoElement) {
+                infoElement.className = `storage-info ${type}`;
+            }
+        }
+
+        // STREAK BERECHNUNG
+        function calculateStreak() {
+            console.log('🚀 === CALCULATING STREAK ===');
+            console.log('📊 Current data:', dayData);
+            
+            let latestSuccessDate = null;
+            
+            for (let dateKey in dayData) {
+                if (dayData[dateKey] === 'success') {
+                    console.log('✅ Found success day:', dateKey);
+                    const parts = dateKey.split('-');
+                    const year = parseInt(parts[0]);
+                    const month = parseInt(parts[1]);
+                    const day = parseInt(parts[2]);
+                    const date = new Date(year, month, day);
+                    
+                    if (!latestSuccessDate || date > latestSuccessDate) {
+                        latestSuccessDate = date;
+                        console.log('📅 New latest success date:', latestSuccessDate);
+                    }
+                }
+            }
+            
+            if (!latestSuccessDate) {
+                console.log('❌ No success days found');
+                document.getElementById('streakNumber').textContent = '0';
+                return;
+            }
+            
+            console.log('🎯 Starting from:', latestSuccessDate);
+            let streak = 0;
+            let checkDate = new Date(latestSuccessDate);
+            
+            for (let i = 0; i < 100; i++) {
+                const key = formatDateKey(checkDate);
+                const status = dayData[key];
+                console.log(`Day ${i}: ${key} = ${status}`);
+                
+                if (status === 'success') {
+                    streak++;
+                    console.log('✅ Streak now:', streak);
+                } else {
+                    console.log('❌ Breaking at:', key);
+                    break;
+                }
+                
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+            
+            console.log('🏆 Final streak:', streak);
+            document.getElementById('streakNumber').textContent = streak;
+        }
+
+        // HAUPTFUNKTIONEN
+        function saveDay() {
+            console.log('🚨 === SAVE DAY CALLED ===');
+            
+            const selectedChoice = document.querySelector('input[name="dayChoice"]:checked');
+            if (!selectedChoice) {
+                console.log('❌ No choice selected');
+                return;
+            }
+            
+            console.log('✅ Selected:', selectedChoice.value);
+            const dateKey = formatDateKey(currentInputDate);
+            console.log('📅 Date key:', dateKey);
+            
+            dayData[dateKey] = selectedChoice.value;
+            console.log('💾 Saved to memory:', dayData);
+            
+            // SOFORT speichern
+            const saveSuccess = saveData();
+            console.log('💾 Save result:', saveSuccess);
+            
+            // Visuelle Bestätigung
+            const btn = document.getElementById('submitDay');
+            const originalText = btn.textContent;
+            btn.textContent = saveSuccess ? '✅ Gespeichert!' : '❌ Fehler!';
+            btn.style.background = saveSuccess ? '#48bb78' : '#e53e3e';
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '#667eea';
+            }, 2000);
+            
+            calculateStreak();
+            
+            // Nächster Tag
+            currentInputDate.setDate(currentInputDate.getDate() + 1);
+            updateDayInputView();
+            
+            // Reset
+            document.querySelectorAll('input[name="dayChoice"]').forEach(radio => {
+                radio.checked = false;
+            });
+            btn.disabled = true;
+            
+            console.log('🏁 === SAVE DAY COMPLETE ===');
+        }
+
+        function updateDayInputView() {
+            document.getElementById('currentDateDisplay').textContent = formatDisplayDate(currentInputDate);
+            updateStorageStatus(`💾 ${Object.keys(dayData).length} Tage`, storageWorking ? 'working' : 'error');
+            
+            const dateKey = formatDateKey(currentInputDate);
+            const existingData = dayData[dateKey];
+            
+            if (existingData) {
+                const radio = document.querySelector(`input[value="${existingData}"]`);
+                if (radio) {
+                    radio.checked = true;
+                    document.getElementById('submitDay').disabled = false;
+                    document.getElementById('submitDay').textContent = 'Tag aktualisieren';
+                }
+            } else {
+                document.getElementById('submitDay').textContent = 'Tag speichern';
+            }
+        }
+
+        function showMonthView() {
+            console.log('📅 Showing month view...');
+            currentViewDate = new Date(currentInputDate);
+            document.getElementById('dayInputView').classList.remove('active');
+            document.getElementById('monthView').classList.add('active');
+            updateMonthView();
+            calculateStreak();
+        }
+
+        function showDayInput() {
+            document.getElementById('monthView').classList.remove('active');
+            document.getElementById('dayInputView').classList.add('active');
+        }
+
+        function updateMonthView() {
+            const year = currentViewDate.getFullYear();
+            const month = currentViewDate.getMonth();
+            
+            document.getElementById('monthHeader').textContent = `${monthNames[month]} ${year}`;
+            
+            const grid = document.getElementById('monthGrid');
+            grid.innerHTML = '';
+            
+            weekdays.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'weekday-header';
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDay = (firstDay.getDay() + 6) % 7;
+            
+            for (let i = 0; i < startDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'day-cell empty';
+                grid.appendChild(emptyCell);
+            }
+            
+            const today = new Date();
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'day-cell';
+                dayCell.textContent = day;
+                
+                const dayDate = new Date(year, month, day);
+                const dateKey = formatDateKey(dayDate);
+                const dayStatus = dayData[dateKey];
+                
+                if (dayStatus === 'success') {
+                    dayCell.classList.add('success');
+                } else if (dayStatus === 'failure') {
+                    dayCell.classList.add('failure');
+                } else {
+                    dayCell.classList.add('neutral');
+                }
+                
+                if (dayDate.toDateString() === today.toDateString()) {
+                    dayCell.classList.add('today');
+                }
+                
+                dayCell.addEventListener('click', function() {
+                    openEditPopup(dayDate);
+                });
+                
+                grid.appendChild(dayCell);
+            }
+        }
+
+        function openEditPopup(date) {
+            editingDate = date;
+            document.getElementById('editDate').textContent = formatDisplayDate(date);
+            document.getElementById('popupOverlay').classList.add('active');
+            document.getElementById('editPopup').classList.add('active');
+        }
+
+        function closeEditPopup() {
+            document.getElementById('popupOverlay').classList.remove('active');
+            document.getElementById('editPopup').classList.remove('active');
+            editingDate = null;
+        }
+
+        function updateDay(action) {
+            if (!editingDate) return;
+            
+            const dateKey = formatDateKey(editingDate);
+            
+            if (action === 'delete') {
+                delete dayData[dateKey];
+                console.log('🗑️ Deleted:', dateKey);
+            } else {
+                dayData[dateKey] = action;
+                console.log('✏️ Updated:', dateKey, '=', action);
+            }
+            
+            saveData();
+            closeEditPopup();
+            updateMonthView();
+            calculateStreak();
+        }
+
+        function previousMonth() {
+            currentViewDate.setMonth(currentViewDate.getMonth() - 1);
+            updateMonthView();
+        }
+
+        function nextMonth() {
+            currentViewDate.setMonth(currentViewDate.getMonth() + 1);
+            updateMonthView();
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ Alle Daten löschen? Diese Aktion kann nicht rückgängig gemacht werden!')) {
+                dayData = {};
+                currentInputDate = new Date();
+                
+                if (storageWorking) {
+                    localStorage.removeItem('streakTrackerData');
+                    localStorage.removeItem('streakTrackerCurrentDate');
+                }
+                
+                updateMonthView();
+                calculateStreak();
+                updateDayInputView();
+                console.log('🗑️ All data cleared');
+                alert('✅ Alle Daten gelöscht!');
+            }
+        }
+
+        // INITIALIZATION
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 DOM loaded - initializing...');
+            
+            // Storage testen
+            testStorage();
+            
+            // Daten laden
+            loadData();
+            
+            // Event Listeners
+            document.querySelectorAll('input[name="dayChoice"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    console.log('🔘 Radio changed:', this.value);
+                    document.getElementById('submitDay').disabled = false;
+                });
+            });
+            
+            document.getElementById('submitDay').addEventListener('click', saveDay);
+            
+            updateDayInputView();
+            console.log('✅ Initialization complete');
+            console.log('📊 Final state - dayData:', dayData);
+            console.log('📊 Final state - storage working:', storageWorking);
+        });
+    </script>
+</body>
+</html>
