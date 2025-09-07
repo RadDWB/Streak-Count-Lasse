@@ -578,6 +578,25 @@
             updateMonthView();
         }
 
+        function clearAllData() {
+            if (confirm('⚠️ Möchten Sie wirklich ALLE Daten dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden!')) {
+                dayData = {};
+                currentInputDate = new Date();
+                
+                // Aus localStorage löschen
+                localStorage.removeItem('streakData');
+                localStorage.removeItem('currentInputDate');
+                
+                console.log('🗑️ All data cleared');
+                
+                // Views aktualisieren
+                updateMonthView();
+                calculateStreak();
+                
+                alert('✅ Alle Daten wurden gelöscht!');
+            }
+        }
+
         // Event Listeners
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🎯 DOM loaded, setting up...');
